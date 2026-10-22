@@ -1,6 +1,6 @@
 // Caché de la app para abrirla sin conexión (solo en contextos seguros,
 // p. ej. localhost). La API nunca se cachea: siempre va a la red.
-const CACHE = 'planner-a6c77e9914';
+const CACHE = 'planner-f70a73996c';
 const SHELL = ['./', 'index.html', 'styles.css', 'js/app.js', 'js/store.js', 'js/importers.js', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));

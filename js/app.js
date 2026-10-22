@@ -518,11 +518,33 @@ function editTx(id) {
   });
 }
 
+// Bancos que operan en Chile (registro CMF). «Otro…» cubre cualquier institución que falte.
+const CHILE_BANKS = [
+  'Banco BICE', 'Banco BTG Pactual Chile', 'Banco Consorcio', 'Banco de Chile', 'Banco de Crédito e Inversiones (BCI)',
+  'Banco de la Nación Argentina', 'Banco Falabella', 'Banco Internacional', 'Banco Ripley', 'Banco Santander Chile',
+  'Banco Security', 'BancoEstado', 'Bank of China (Agencia en Chile)', 'China Construction Bank (Agencia en Chile)',
+  'HSBC Bank Chile', 'Itaú Chile', 'JP Morgan Chase Bank', 'MUFG Bank', 'Scotiabank Chile', 'Tanner Banco Digital',
+];
+const CHILE_OTHERS = ['Coopeuch', 'Los Héroes (Prepago)', 'MACH', 'Mercado Pago', 'Tenpo'];
+
+function bankSelect(current) {
+  const isOther = !!current && ![...CHILE_BANKS, ...CHILE_OTHERS].includes(current);
+  const opt = (b) => `<option value="${esc(b)}" ${b === current ? 'selected' : ''}>${esc(b)}</option>`;
+  return `<label class="field">Banco<select name="bankChoice">
+      <option value="" ${current ? '' : 'selected'}>— Selecciona —</option>
+      <optgroup label="Bancos">${CHILE_BANKS.map(opt).join('')}</optgroup>
+      <optgroup label="Cooperativas y billeteras">${CHILE_OTHERS.map(opt).join('')}</optgroup>
+      <option value="__other" ${isOther ? 'selected' : ''}>Otro…</option>
+    </select></label>
+    <label class="field" id="bank-other" ${isOther ? '' : 'hidden'}>Nombre de la institución
+      <input type="text" name="bankOther" value="${esc(isOther ? current : '')}" placeholder="Ej. Caja Los Andes"></label>`;
+}
+
 function editAccount(id) {
   const a = id ? accById(id) : null;
   openDialog(`<h2>${a ? 'Editar cuenta' : 'Nueva cuenta'}</h2>
     <label class="field">Nombre<input type="text" name="name" value="${esc(a?.name)}" required placeholder="Cuenta corriente Banco de Chile"></label>
-    <label class="field">Banco<input type="text" name="bank" value="${esc(a?.bank)}" placeholder="Banco de Chile, Santander, BCI…"></label>
+    ${bankSelect(a?.bank)}
     <label class="field">Tipo<select name="type">
       ${[['corriente', 'Cuenta corriente'], ['vista', 'Cuenta vista / RUT'], ['credito', 'Tarjeta de crédito']].map(([v, l]) =>
         `<option value="${v}" ${a?.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -534,7 +556,15 @@ function editAccount(id) {
       if (live(state.doc.collections.transactions).some((t) => t.accountId === a.id)) { toast('La cuenta tiene movimientos; no se puede eliminar.'); return false; }
       remove('accounts', a.id); return;
     }
-    upsert('accounts', { id: a?.id || uid('acc'), name: f.get('name').trim(), bank: f.get('bank').trim(), type: f.get('type') });
+    const choice = f.get('bankChoice');
+    const bank = choice === '__other' ? f.get('bankOther').trim() : choice;
+    upsert('accounts', { id: a?.id || uid('acc'), name: f.get('name').trim(), bank, type: f.get('type') });
+  });
+  const form = document.getElementById('dlg-form');
+  form.bankChoice.addEventListener('change', () => {
+    const other = form.bankChoice.value === '__other';
+    document.getElementById('bank-other').hidden = !other;
+    if (other) form.bankOther.focus();
   });
 }
 
